@@ -18,6 +18,9 @@ package com.zzg.mybatis.generator.plugins;
 
 import static org.mybatis.generator.internal.util.StringUtility.isTrue;
 
+import java.text.MessageFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Properties;
 
 import org.mybatis.generator.api.CommentGenerator;
@@ -28,6 +31,7 @@ import org.mybatis.generator.api.dom.java.Field;
 import org.mybatis.generator.api.dom.java.FullyQualifiedJavaType;
 import org.mybatis.generator.api.dom.java.InnerClass;
 import org.mybatis.generator.api.dom.java.InnerEnum;
+import org.mybatis.generator.api.dom.java.JavaVisibility;
 import org.mybatis.generator.api.dom.java.Method;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 import org.mybatis.generator.api.dom.xml.XmlElement;
@@ -49,14 +53,27 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 		properties = new Properties();
 	}
 
+	/**
+	 * java import 导包
+	 */
 	public void addJavaFileComment(CompilationUnit compilationUnit) {
 		// add no file level comments by default
 		if (isAnnotations) {
+			if (compilationUnit.getType().getShortName().endsWith("Example")) {// 不给example导包
+				compilationUnit.addImportedType(new FullyQualifiedJavaType("java.io.Serializable"));
+				if (compilationUnit instanceof InnerClass) {
+					this.addSerialVersionUID((InnerClass) compilationUnit);
+					this.addClassComment((InnerClass) compilationUnit);
+				}
+				return;
+			}
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.Table"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.Id"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.Column"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GeneratedValue"));
-			compilationUnit.addImportedType(new FullyQualifiedJavaType("org.hibernate.validator.constraints.NotEmpty"));
+			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.validation.constraints.NotEmpty"));
+			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GenerationType"));
+			// TOOD 可添加swagger注解
 		}
 	}
 
@@ -69,7 +86,6 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 
 	public void addRootComment(XmlElement rootElement) {
 		// add no document level comments by default
-		return;
 	}
 
 	public void addConfigurationProperties(Properties properties) {
@@ -79,12 +95,15 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 	}
 
 	public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable) {
+		addClassComment(innerClass);
+		addSerialVersionUID(innerClass);
 	}
 
+	/**
+	 * 实体类添加注释
+	 */
 	public void addModelClassComment(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
-		topLevelClass.addJavaDocLine("/**");
-		topLevelClass.addJavaDocLine(" * @author ");
-		topLevelClass.addJavaDocLine(" */");
+		addClassComment(topLevelClass);
 		if (isAnnotations) {
 			topLevelClass
 					.addAnnotation("@Table(name=\"" + introspectedTable.getFullyQualifiedTableNameAtRuntime() + "\")");
@@ -97,12 +116,14 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 	public void addFieldComment(Field field, IntrospectedTable introspectedTable,
 			IntrospectedColumn introspectedColumn) {
 		if (StringUtility.stringHasValue(introspectedColumn.getRemarks())) {
-			field.addJavaDocLine("/**");
-			StringBuilder sb = new StringBuilder();
-			sb.append(" * ");
-			sb.append(introspectedColumn.getRemarks());
-			field.addJavaDocLine(sb.toString());
-			field.addJavaDocLine(" */");
+			// field.addJavaDocLine("/**");
+			// StringBuilder sb = new StringBuilder();
+			// sb.append(" * ");
+			// sb.append(introspectedColumn.getRemarks());
+			// field.addJavaDocLine(sb.toString());
+			// field.addJavaDocLine(" */");
+
+			field.addJavaDocLine(MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks()));
 		}
 
 		if (isAnnotations) {
@@ -111,13 +132,18 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 				if (introspectedColumn == column) {
 					isId = true;
 					field.addAnnotation("@Id");
-					field.addAnnotation("@GeneratedValue");
 					break;
 				}
 			}
+
 			if (!introspectedColumn.isNullable() && !isId) {
-				field.addAnnotation("@NotEmpty");
+				field.addAnnotation("@NotEmpty");// 给非空字段添加验证注解
 			}
+			// 给字段添加Columu 属性
+			field.addAnnotation(
+					MessageFormat.format("@Column(name=\"{0}\")", introspectedColumn.getActualColumnName()));
+
+			// 给注解字段添加注解
 			if (introspectedColumn.isIdentity()) {
 				if (introspectedTable.getTableConfiguration().getGeneratedKey().getRuntimeSqlStatement()
 						.equals("JDBC")) {
@@ -140,14 +166,42 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 
 	public void addGetterComment(Method method, IntrospectedTable introspectedTable,
 			IntrospectedColumn introspectedColumn) {
+		String fieldComment = MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks());
+		method.addJavaDocLine(fieldComment);
 	}
 
 	public void addSetterComment(Method method, IntrospectedTable introspectedTable,
 			IntrospectedColumn introspectedColumn) {
+		String fieldComment = MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks());
+		method.addJavaDocLine(fieldComment);
 	}
 
 	public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable, boolean markAsDoNotDelete) {
-		innerClass.addJavaDocLine("/**"); //$NON-NLS-1$
-		innerClass.addJavaDocLine(" */"); //$NON-NLS-1$
+		addClassComment(innerClass);
+
+		addSerialVersionUID(innerClass);
+	}
+
+	private void addClassComment(InnerClass innerClass) {
+		innerClass.addJavaDocLine("/**");
+		innerClass.addJavaDocLine(" * @Description: TODO");// 描述信息
+		innerClass.addJavaDocLine(" * @author CharlesXiong");
+		innerClass.addJavaDocLine(" * @date: " + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+		innerClass.addJavaDocLine(" * @see {@link TODO }");// link信息
+		innerClass.addJavaDocLine(" */");
+	}
+
+	private void addSerialVersionUID(InnerClass innerClass) {
+		FullyQualifiedJavaType superInterface = new FullyQualifiedJavaType("java.io.Serializable");// 此种不用手动额外导包
+		innerClass.addSuperInterface(superInterface);
+		// 添加 private static final long serialVersionUID = 1L;
+		Field field = new Field();
+		field.setVisibility(JavaVisibility.PRIVATE);
+		field.setStatic(true);
+		field.setFinal(true);
+		field.setType(new FullyQualifiedJavaType("long"));
+		field.setName("serialVersionUID");
+		field.setInitializationString("1L");
+		innerClass.addField(field);
 	}
 }
