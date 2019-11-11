@@ -21,7 +21,12 @@ import static org.mybatis.generator.internal.util.StringUtility.isTrue;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.mybatis.generator.api.CommentGenerator;
 import org.mybatis.generator.api.IntrospectedColumn;
@@ -73,7 +78,12 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GeneratedValue"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.validation.constraints.NotEmpty"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GenerationType"));
-			// TOOD 可添加swagger注解
+		} else {
+			// 可添加swagger注解
+			compilationUnit.addImportedType(new FullyQualifiedJavaType("com.axxc.cloud.common.entity.BaseVo"));
+			compilationUnit.addImportedType(new FullyQualifiedJavaType("com.fasterxml.jackson.annotation.JsonFormat"));
+			compilationUnit.addImportedType(new FullyQualifiedJavaType("io.swagger.annotations.ApiModel"));
+			compilationUnit.addImportedType(new FullyQualifiedJavaType("io.swagger.annotations.ApiModelProperty"));
 		}
 	}
 
@@ -107,6 +117,11 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 		if (isAnnotations) {
 			topLevelClass
 					.addAnnotation("@Table(name=\"" + introspectedTable.getFullyQualifiedTableNameAtRuntime() + "\")");
+		} else {
+			// swagger 实体类注解
+			String swaggerModelAnnotation = msgFormat("@ApiModel(value = \"{0}\")",
+					introspectedTable.getTableConfiguration().getDomainObjectName());
+			topLevelClass.addAnnotation(swaggerModelAnnotation);
 		}
 	}
 
@@ -155,8 +170,32 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 				field.addAnnotation("@SequenceGenerator(name=\"\",sequenceName=\""
 						+ introspectedTable.getTableConfiguration().getGeneratedKey().getRuntimeSqlStatement() + "\")");
 			}
+		} else {
+			String domainObjectName = introspectedTable.getTableConfiguration().getDomainObjectName();
+			AtomicInteger atomicInteger;
+			if (hashMap.containsKey(domainObjectName)) {
+				atomicInteger = hashMap.get(domainObjectName);
+				atomicInteger.addAndGet(1);
+			} else {
+				hashMap.clear();
+				atomicInteger = new AtomicInteger(0);
+				hashMap.put(domainObjectName, atomicInteger);
+			}
+			// swagger 字段注解
+			String fieldComment = msgFormat("@ApiModelProperty(value = \"{0}\", position = {1})",
+					introspectedColumn.getRemarks(), atomicInteger.get() * 10);
+			field.addAnnotation(fieldComment);
+
+			if ("java.util.Date".contains(introspectedColumn.getFullyQualifiedJavaType().toString())) {
+				// 添加时间字段注解
+				//
+				field.addAnnotation("@JsonFormat(pattern = \"yyyy-MM-dd HH:mm:ss\", timezone = \"GMT+8\")");
+			}
+
 		}
 	}
+
+	static Map<String, AtomicInteger> hashMap = new HashMap<>();
 
 	public void addFieldComment(Field field, IntrospectedTable introspectedTable) {
 	}
@@ -203,5 +242,13 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 		field.setName("serialVersionUID");
 		field.setInitializationString("1L");
 		innerClass.addField(field);
+	}
+
+	public static String msgFormat(String pattern, Object... arguments) {
+		List<String> newArgus = new ArrayList<>(arguments.length);
+		for (Object object : arguments) {
+			newArgus.add(String.valueOf(object));
+		}
+		return MessageFormat.format(pattern, newArgus.toArray());
 	}
 }
