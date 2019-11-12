@@ -76,7 +76,7 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.Id"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.Column"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GeneratedValue"));
-			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.validation.constraints.NotEmpty"));
+			compilationUnit.addImportedType(new FullyQualifiedJavaType("org.hibernate.validator.constraints.NotEmpty"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GenerationType"));
 		} else {
 			// 可添加swagger注解
