@@ -137,7 +137,7 @@ public class MybatisGeneratorBridge {
             commentConfig.addProperty("columnRemarks", "true");
         }
         if (generatorConfig.isAnnotation()) {
-            commentConfig.addProperty("annotations", "true");
+            commentConfig.addProperty("annotations", "true");//从 UI 勾选的值, 传递进去
         }
         context.setCommentGeneratorConfiguration(commentConfig);
         
