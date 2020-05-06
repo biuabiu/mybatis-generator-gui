@@ -175,6 +175,9 @@ public class MybatisGeneratorBridge {
         ShellCallback shellCallback = new DefaultShellCallback(true); // override=true
         MyBatisGenerator myBatisGenerator = new MyBatisGenerator(configuration, shellCallback, warnings);
         myBatisGenerator.generate(progressCallback, contexts, fullyqualifiedTables);
+        
+        //生成完数据 清空计数变量
+        DbRemarksCommentGenerator.hashMap.clear();
     }
 
 	public void setProgressCallback(ProgressCallback progressCallback) {
