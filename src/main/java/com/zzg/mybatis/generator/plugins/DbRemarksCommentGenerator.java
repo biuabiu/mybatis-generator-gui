@@ -42,6 +42,7 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
 import org.mybatis.generator.api.dom.xml.XmlElement;
 import org.mybatis.generator.internal.util.StringUtility;
 
+
 /**
  * 此插件使用数据库表中列的注释来生成Java Model中属性的注释
  *
@@ -80,11 +81,13 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GenerationType"));
 		} else {
 			// 可添加swagger注解
-			compilationUnit.addImportedType(new FullyQualifiedJavaType("com.axxc.cloud.common.entity.BaseVo"));
+			//compilationUnit.addImportedType(new FullyQualifiedJavaType("com.axxc.cloud.common.entity.BaseVo"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("com.fasterxml.jackson.annotation.JsonFormat"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("io.swagger.annotations.ApiModel"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("io.swagger.annotations.ApiModelProperty"));
 		}
+		compilationUnit.addImportedType(new FullyQualifiedJavaType("lombok.Data"));
+		compilationUnit.addImportedType(new FullyQualifiedJavaType("lombok.EqualsAndHashCode"));
 	}
 
 	/**
@@ -114,6 +117,8 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 	 */
 	public void addModelClassComment(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
 		addClassComment(topLevelClass);
+		topLevelClass.addAnnotation("@Data");
+		topLevelClass.addAnnotation("@EqualsAndHashCode(callSuper = false)");
 		if (isAnnotations) {
 			topLevelClass
 					.addAnnotation("@Table(name=\"" + introspectedTable.getFullyQualifiedTableNameAtRuntime() + "\")");
@@ -131,14 +136,8 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 	public void addFieldComment(Field field, IntrospectedTable introspectedTable,
 			IntrospectedColumn introspectedColumn) {
 		if (StringUtility.stringHasValue(introspectedColumn.getRemarks())) {
-			// field.addJavaDocLine("/**");
-			// StringBuilder sb = new StringBuilder();
-			// sb.append(" * ");
-			// sb.append(introspectedColumn.getRemarks());
-			// field.addJavaDocLine(sb.toString());
-			// field.addJavaDocLine(" */");
-
-			field.addJavaDocLine(MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks()));
+			// 使用swagger 注解显示注释 不用额外单独再显示
+			//field.addJavaDocLine(MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks()));
 		}
 
 		if (isAnnotations) {
@@ -205,14 +204,14 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 
 	public void addGetterComment(Method method, IntrospectedTable introspectedTable,
 			IntrospectedColumn introspectedColumn) {
-		String fieldComment = MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks());
-		method.addJavaDocLine(fieldComment);
+		//String fieldComment = MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks());
+		//method.addJavaDocLine(fieldComment);
 	}
 
 	public void addSetterComment(Method method, IntrospectedTable introspectedTable,
 			IntrospectedColumn introspectedColumn) {
-		String fieldComment = MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks());
-		method.addJavaDocLine(fieldComment);
+		//String fieldComment = MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks());
+		//method.addJavaDocLine(fieldComment);
 	}
 
 	public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable, boolean markAsDoNotDelete) {
