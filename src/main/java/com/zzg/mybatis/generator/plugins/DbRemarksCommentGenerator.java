@@ -21,11 +21,7 @@ import static org.mybatis.generator.internal.util.StringUtility.isTrue;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.mybatis.generator.api.CommentGenerator;
@@ -51,6 +47,8 @@ import org.mybatis.generator.internal.util.StringUtility;
  */
 public class DbRemarksCommentGenerator implements CommentGenerator {
 
+	public static Map<String, AtomicInteger> hashMap = new HashMap<>();
+	
 	private Properties properties;
 	private boolean isAnnotations;
 
@@ -194,7 +192,7 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 		}
 	}
 
-	static Map<String, AtomicInteger> hashMap = new HashMap<>();
+
 
 	public void addFieldComment(Field field, IntrospectedTable introspectedTable) {
 	}
