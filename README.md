@@ -57,3 +57,9 @@ Eclipse or IntelliJ IDEA中启动, 找到```com.zzg.mybatis.generator.MainUI```�
 Licensed under the Apache 2.0 License
 
 Copyright 2017 by Owen Zou
+
+###使用lombok
+需要简单修改该类生成mothod时 continue setter/getter 方法
+https://github.com/mybatis/generator
+org.mybatis.generator.codegen.mybatis3.model.BaseRecordGenerator.getCompilationUnits()
+
