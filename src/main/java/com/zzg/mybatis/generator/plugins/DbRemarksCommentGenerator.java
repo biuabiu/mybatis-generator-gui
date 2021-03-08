@@ -36,6 +36,7 @@ import org.mybatis.generator.api.dom.java.JavaVisibility;
 import org.mybatis.generator.api.dom.java.Method;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 import org.mybatis.generator.api.dom.xml.XmlElement;
+import org.mybatis.generator.config.TableConfiguration;
 import org.mybatis.generator.internal.util.StringUtility;
 
 
@@ -75,12 +76,12 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.Id"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.Column"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GeneratedValue"));
-			compilationUnit.addImportedType(new FullyQualifiedJavaType("org.hibernate.validator.constraints.NotEmpty"));
+			//compilationUnit.addImportedType(new FullyQualifiedJavaType("org.hibernate.validator.constraints.NotEmpty"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("javax.persistence.GenerationType"));
 		} else {
 			// 可添加swagger注解
 			//compilationUnit.addImportedType(new FullyQualifiedJavaType("com.axxc.cloud.common.entity.BaseVo"));
-			compilationUnit.addImportedType(new FullyQualifiedJavaType("com.fasterxml.jackson.annotation.JsonFormat"));
+			//compilationUnit.addImportedType(new FullyQualifiedJavaType("com.fasterxml.jackson.annotation.JsonFormat"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("io.swagger.annotations.ApiModel"));
 			compilationUnit.addImportedType(new FullyQualifiedJavaType("io.swagger.annotations.ApiModelProperty"));
 		}
@@ -118,12 +119,11 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 		topLevelClass.addAnnotation("@Data");
 		topLevelClass.addAnnotation("@EqualsAndHashCode(callSuper = false)");
 		if (isAnnotations) {
-			topLevelClass
-					.addAnnotation("@Table(name=\"" + introspectedTable.getFullyQualifiedTableNameAtRuntime() + "\")");
+			topLevelClass.addAnnotation("@Table(name=\"" + introspectedTable.getFullyQualifiedTableNameAtRuntime() + "\")");
 		} else {
 			// swagger 实体类注解
-			String swaggerModelAnnotation = msgFormat("@ApiModel(value = \"{0}\")",
-					introspectedTable.getTableConfiguration().getDomainObjectName());
+			TableConfiguration tableConfiguration = introspectedTable.getTableConfiguration();
+			String swaggerModelAnnotation = msgFormat("@ApiModel(value = \"{0}\")",tableConfiguration.getDomainObjectName());
 			topLevelClass.addAnnotation(swaggerModelAnnotation);
 		}
 	}
@@ -133,40 +133,40 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 
 	public void addFieldComment(Field field, IntrospectedTable introspectedTable,
 			IntrospectedColumn introspectedColumn) {
-		if (StringUtility.stringHasValue(introspectedColumn.getRemarks())) {
-			// 使用swagger 注解显示注释 不用额外单独再显示
-			//field.addJavaDocLine(MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks()));
-		}
 
 		if (isAnnotations) {
+			if (StringUtility.stringHasValue(introspectedColumn.getRemarks())) {
+				// 使用swagger 注解显示注释 不用额外单独再显示
+				field.addJavaDocLine(MessageFormat.format("/**{0}**/", introspectedColumn.getRemarks()));
+			}
 			boolean isId = false;
 			for (IntrospectedColumn column : introspectedTable.getPrimaryKeyColumns()) {
 				if (introspectedColumn == column) {
 					isId = true;
 					field.addAnnotation("@Id");
+					field.addAnnotation("@GeneratedValue(strategy = GenerationType.IDENTITY)");
 					break;
 				}
 			}
 
 			if (!introspectedColumn.isNullable() && !isId) {
-				field.addAnnotation("@NotEmpty");// 给非空字段添加验证注解
+				//field.addAnnotation("@NotEmpty");// 给非空字段添加验证注解
 			}
 			// 给字段添加Columu 属性
-			field.addAnnotation(
-					MessageFormat.format("@Column(name=\"{0}\")", introspectedColumn.getActualColumnName()));
+			field.addAnnotation(MessageFormat.format("@Column(name=\"{0}\")", introspectedColumn.getActualColumnName()));
 
 			// 给注解字段添加注解
-			if (introspectedColumn.isIdentity()) {
-				if (introspectedTable.getTableConfiguration().getGeneratedKey().getRuntimeSqlStatement()
-						.equals("JDBC")) {
-					field.addAnnotation("@GeneratedValue(generator = \"JDBC\")");
-				} else {
-					field.addAnnotation("@GeneratedValue(strategy = GenerationType.IDENTITY)");
-				}
-			} else if (introspectedColumn.isSequenceColumn()) {
-				field.addAnnotation("@SequenceGenerator(name=\"\",sequenceName=\""
-						+ introspectedTable.getTableConfiguration().getGeneratedKey().getRuntimeSqlStatement() + "\")");
-			}
+//			if (introspectedColumn.isIdentity()) {
+//				if (introspectedTable.getTableConfiguration().getGeneratedKey().getRuntimeSqlStatement()
+//						.equals("JDBC")) {
+//					field.addAnnotation("@GeneratedValue(generator = \"JDBC\")");
+//				} else {
+//					field.addAnnotation("@GeneratedValue(strategy = GenerationType.IDENTITY)");
+//				}
+//			} else if (introspectedColumn.isSequenceColumn()) {
+//				field.addAnnotation("@SequenceGenerator(name=\"\",sequenceName=\""
+//						+ introspectedTable.getTableConfiguration().getGeneratedKey().getRuntimeSqlStatement() + "\")");
+//			}
 		} else {
 			String domainObjectName = introspectedTable.getTableConfiguration().getDomainObjectName();
 			AtomicInteger atomicInteger;
@@ -185,8 +185,7 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 
 			if ("java.util.Date".contains(introspectedColumn.getFullyQualifiedJavaType().toString())) {
 				// 添加时间字段注解
-				//
-				field.addAnnotation("@JsonFormat(pattern = \"yyyy-MM-dd HH:mm:ss\", timezone = \"GMT+8\")");
+				// field.addAnnotation("@JsonFormat(pattern = \"yyyy-MM-dd HH:mm:ss\", timezone = \"GMT+8\")");
 			}
 
 		}
@@ -220,10 +219,10 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 
 	private void addClassComment(InnerClass innerClass) {
 		innerClass.addJavaDocLine("/**");
-		innerClass.addJavaDocLine(" * @Description: TODO");// 描述信息
 		innerClass.addJavaDocLine(" * @author CharlesXiong");
 		innerClass.addJavaDocLine(" * @date: " + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
-		innerClass.addJavaDocLine(" * @see {@link TODO }");// link信息
+		innerClass.addJavaDocLine(" * @see {@link  }");// link信息
+		innerClass.addJavaDocLine(" * @notes ");// link信息
 		innerClass.addJavaDocLine(" */");
 	}
 
@@ -231,7 +230,7 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 		FullyQualifiedJavaType superInterface = new FullyQualifiedJavaType("java.io.Serializable");// 此种不用手动额外导包
 		innerClass.addSuperInterface(superInterface);
 		// 添加 private static final long serialVersionUID = 1L;
-		Field field = new Field();
+		Field field = new Field("serialVersionUID",new FullyQualifiedJavaType("long"));
 		field.setVisibility(JavaVisibility.PRIVATE);
 		field.setStatic(true);
 		field.setFinal(true);
@@ -247,5 +246,40 @@ public class DbRemarksCommentGenerator implements CommentGenerator {
 			newArgus.add(String.valueOf(object));
 		}
 		return MessageFormat.format(pattern, newArgus.toArray());
+	}
+
+	@Override
+	public void addGeneralMethodAnnotation(Method method, IntrospectedTable introspectedTable,
+			Set<FullyQualifiedJavaType> imports) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void addGeneralMethodAnnotation(Method method, IntrospectedTable introspectedTable,
+			IntrospectedColumn introspectedColumn, Set<FullyQualifiedJavaType> imports) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void addFieldAnnotation(Field field, IntrospectedTable introspectedTable,
+			Set<FullyQualifiedJavaType> imports) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void addFieldAnnotation(Field field, IntrospectedTable introspectedTable,
+			IntrospectedColumn introspectedColumn, Set<FullyQualifiedJavaType> imports) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void addClassAnnotation(InnerClass innerClass, IntrospectedTable introspectedTable,
+			Set<FullyQualifiedJavaType> imports) {
+		// TODO Auto-generated method stub
+		
 	}
 }

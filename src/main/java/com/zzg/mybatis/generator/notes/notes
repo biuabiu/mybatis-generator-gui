@@ -1,0 +1,5 @@
+
+# 依赖 mybatis-generator-core 1.4.1-SNAPSHOT
+	修改 org.mybatis.generator.codegen.mybatis3.model.BaseRecordGenerator.getCompilationUnits()约100行处 支持使用lombok
+	修改 org.mybatis.generator.codegen.mybatis3.javamapper.JavaMapperGenerator.getCompilationUnits() 约64行处 支持mapper继承父类接口及添加泛型的生成 
+	
